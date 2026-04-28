@@ -12,7 +12,6 @@
     <!-- Tailwind CSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // Tailwindのカスタム設定（アニメーションとフォント）
         tailwind.config = {
             theme: {
                 extend: {
@@ -40,7 +39,6 @@
         }
     </script>
     <style>
-        /* input type="number" の上下矢印（スピンボタン）を非表示にする */
         input[type="number"]::-webkit-outer-spin-button,
         input[type="number"]::-webkit-inner-spin-button {
             -webkit-appearance: none;
@@ -49,8 +47,6 @@
         input[type="number"] {
             -moz-appearance: textfield;
         }
-        
-        /* 押し込んだ時のボタンの挙動をスムーズにするための設定 */
         button {
             touch-action: manipulation;
         }
@@ -58,10 +54,8 @@
 </head>
 <body class="bg-yellow-50 text-gray-800 min-h-screen p-4 flex flex-col items-center justify-center font-sans selection:bg-pink-300">
 
-    <!-- メインのアプリコンテナ -->
     <div class="w-full max-w-4xl bg-white rounded-[2.5rem] shadow-2xl p-6 md:p-10 border-8 border-orange-200">
         
-        <!-- タイトルと保存状態 -->
         <div class="relative mb-8">
             <h1 class="text-3xl md:text-5xl font-black text-center text-orange-500 drop-shadow-sm">
                 🌟 ぶんすう マスター 🌟
@@ -71,7 +65,6 @@
             </div>
         </div>
 
-        <!-- モード切り替えボタン -->
         <div class="flex flex-wrap justify-center gap-3 md:gap-5 mb-8">
             <button id="btn-simplify" class="mode-btn bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-3 px-5 rounded-full text-lg md:text-2xl shadow-md transition transform">
                 ✨ やくぶん
@@ -84,9 +77,7 @@
             </button>
         </div>
 
-        <!-- 問題表示エリア -->
         <div class="bg-blue-50 rounded-[2rem] p-6 md:p-10 mb-8 border-4 border-blue-200 relative overflow-hidden">
-            <!-- 装飾の背景要素 -->
             <div class="absolute top-[-20px] left-[-20px] text-6xl opacity-20">☁️</div>
             <div class="absolute bottom-[-20px] right-[-20px] text-6xl opacity-20">🎈</div>
 
@@ -95,21 +86,14 @@
             </h2>
             
             <div class="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12 relative z-10">
-                <!-- 左側：問題の分数（JSで挿入） -->
                 <div id="question-container" class="flex items-center justify-center"></div>
-
-                <!-- 真ん中：イコール -->
                 <div class="text-5xl md:text-7xl font-bold text-gray-400">＝</div>
-
-                <!-- 右側：入力欄（JSで挿入） -->
                 <div id="answer-container" class="flex items-center justify-center"></div>
             </div>
         </div>
 
-        <!-- フィードバック（正解・不正解のメッセージ） -->
         <div id="feedback" class="h-24 flex items-center justify-center mb-6"></div>
 
-        <!-- アクションボタン群 -->
         <div class="flex flex-col sm:flex-row justify-center gap-4 mb-8">
             <button id="btn-check" class="bg-red-500 hover:bg-red-600 text-white font-black py-4 px-8 rounded-full text-2xl md:text-3xl shadow-xl transition transform hover:scale-105 active:scale-95">
                 ✅ こたえあわせ
@@ -119,11 +103,9 @@
             </button>
         </div>
 
-        <!-- せいせきエリア -->
         <div class="bg-gray-50 rounded-[2rem] p-6 border-4 border-gray-200">
             <h3 class="text-xl md:text-2xl font-black text-center text-gray-700 mb-4">📊 せいせき</h3>
             <div id="stats-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-lg mb-4">
-                <!-- JSで成績がここに挿入されます -->
             </div>
             
             <div>
@@ -135,114 +117,131 @@
                 </div>
             </div>
         </div>
-
     </div>
 
-    <!-- JavaScript ロジック (モジュール化してクラウド保存に対応) -->
     <script type="module">
-        // Firebase の各種機能のインポート
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // クラウドデータベース(Firebase)の初期設定
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        // ============================================================================
+        // ⚠️ GitHub等の外部環境でクラウド保存（履歴の永続化）を使うための設定
+        // ============================================================================
+        // ご自身でFirebaseプロジェクト(無料)を作成し、以下の fallbackConfig の中に
+        // Firebaseの「プロジェクト設定」にある config の値を貼り付けてください。
+        // （設定がない場合は、保存機能がオフになった状態でゲームのみ遊べます）
+        const fallbackConfig = {
+            // apiKey: "YOUR_API_KEY",
+            // authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            // projectId: "YOUR_PROJECT_ID",
+            // storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            // messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            // appId: "YOUR_APP_ID"
+        };
+        // ============================================================================
 
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : fallbackConfig;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'external-fraction-app';
+        const elSaveStatus = document.getElementById('save-status');
+
+        let app, auth, db;
+        let isCloudEnabled = false;
         let currentUser = null;
-        let isCloudReady = false;
+        let unsubscribeSnapshot = null;
 
+        // Firebaseの設定が存在するかチェック
+        if (Object.keys(firebaseConfig).length > 0) {
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                isCloudEnabled = true;
+            } catch (error) {
+                console.error("Firebaseの初期化に失敗しました:", error);
+            }
+        }
+
+        // 状態変数
         let currentMode = 'simplify';
         let currentAnswer = {};
         let currentProblemStr = '';
         let hasCountedCurrentProblem = false;
-
-        // 成績データを保持するオブジェクト
         let stats = {
             total: { attempts: 0, corrects: 0 },
             simplify: { attempts: 0, corrects: 0 },
             mix2imp: { attempts: 0, corrects: 0 },
             imp2mix: { attempts: 0, corrects: 0 }
         };
-        let historyLog = []; // 解答履歴の配列
+        let historyLog = [];
 
-        // DOM要素の取得
+        // DOM要素
         const elQuestion = document.getElementById('question-container');
         const elAnswer = document.getElementById('answer-container');
         const elInstruction = document.getElementById('instruction-text');
         const elFeedback = document.getElementById('feedback');
         const btnCheck = document.getElementById('btn-check');
         const btnNext = document.getElementById('btn-next');
-        const elSaveStatus = document.getElementById('save-status');
-
         const btns = {
             'simplify': document.getElementById('btn-simplify'),
             'mix2imp': document.getElementById('btn-mix2imp'),
             'imp2mix': document.getElementById('btn-imp2mix')
         };
 
-        // --- クラウドへのログインとデータの同期 ---
-        const initAuth = async () => {
+        // データベース接続の初期化
+        const initCloud = async () => {
+            if (!isCloudEnabled) {
+                elSaveStatus.innerText = "⚠️ データベース未設定 (ほぞんされません)";
+                elSaveStatus.classList.replace("text-gray-400", "text-orange-400");
+                return;
+            }
+
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } else {
                     await signInAnonymously(auth);
                 }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        currentUser = user;
+                        // Firestoreのパス設定 (プレビュー環境のルールに準拠しつつ、外部でも動作するようにする)
+                        const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'fraction_data', 'userData');
+                        
+                        unsubscribeSnapshot = onSnapshot(docRef, (snapshot) => {
+                            if (snapshot.exists()) {
+                                const data = snapshot.data();
+                                if (data.stats) stats = data.stats;
+                                if (data.historyLog) historyLog = data.historyLog;
+                            }
+                            elSaveStatus.innerText = "☁️ クラウドにほぞん済";
+                            elSaveStatus.classList.remove("text-gray-400", "text-orange-400");
+                            elSaveStatus.classList.add("text-green-500");
+                            updateStatsUI();
+                        }, (error) => {
+                            console.error("データの読み込みエラー:", error);
+                        });
+                    } else {
+                        currentUser = null;
+                        if (unsubscribeSnapshot) unsubscribeSnapshot();
+                    }
+                });
             } catch (error) {
                 console.error("ログインエラー:", error);
-                elSaveStatus.innerText = "⚠️ ほぞんエラー";
-                elSaveStatus.classList.add("text-red-400");
+                elSaveStatus.innerText = "⚠️ クラウドせつぞくエラー";
+                elSaveStatus.classList.replace("text-gray-400", "text-red-400");
             }
         };
 
-        let unsubscribeSnapshot = null;
-
-        // ログイン状態が確定したときの処理
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                
-                // クラウドからユーザー個人のデータ（成績・履歴）を監視して読み込む
-                const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'fraction_data', 'userData');
-                
-                unsubscribeSnapshot = onSnapshot(docRef, (snapshot) => {
-                    if (snapshot.exists()) {
-                        const data = snapshot.data();
-                        if (data.stats) stats = data.stats;
-                        if (data.historyLog) historyLog = data.historyLog;
-                    }
-                    isCloudReady = true;
-                    elSaveStatus.innerText = "☁️ クラウドにほぞん済";
-                    elSaveStatus.classList.remove("text-gray-400");
-                    elSaveStatus.classList.add("text-green-500");
-                    updateStatsUI(); // データを画面に反映
-                }, (error) => {
-                    console.error("データの読み込みエラー:", error);
-                });
-            } else {
-                currentUser = null;
-                isCloudReady = false;
-                if (unsubscribeSnapshot) unsubscribeSnapshot();
-            }
-        });
-
-        // アプリ起動時にログイン開始
-        initAuth();
-
-        // データをクラウドに保存する関数
+        // データ保存
         async function saveProgress() {
-            if (!currentUser || !isCloudReady) return;
+            if (!isCloudEnabled || !currentUser) return;
             
             elSaveStatus.innerText = "☁️ ほぞん中...";
             elSaveStatus.classList.replace("text-green-500", "text-orange-400");
 
             const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'fraction_data', 'userData');
             try {
-                // データをドキュメントに書き込む
                 await setDoc(docRef, { stats: stats, historyLog: historyLog });
                 elSaveStatus.innerText = "☁️ クラウドにほぞん済";
                 elSaveStatus.classList.replace("text-orange-400", "text-green-500");
@@ -253,17 +252,9 @@
             }
         }
 
-        // 最大公約数を求める関数
-        function gcd(a, b) {
-            return b === 0 ? a : gcd(b, a % b);
-        }
+        function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
+        function getRandomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 
-        // 指定範囲のランダムな整数を生成する関数
-        function getRandomInt(min, max) {
-            return Math.floor(Math.random() * (max - min + 1)) + min;
-        }
-
-        // 新しい問題を生成し、画面に描画する関数
         function generateProblem() {
             elFeedback.innerHTML = '';
             hasCountedCurrentProblem = false;
@@ -271,181 +262,103 @@
             if (currentMode === 'simplify') {
                 elInstruction.innerText = '💡 やくぶん しよう！';
                 let d, n;
-                do {
-                    d = getRandomInt(2, 9);
-                    n = getRandomInt(1, d - 1);
-                } while (gcd(n, d) !== 1);
+                do { d = getRandomInt(2, 9); n = getRandomInt(1, d - 1); } while (gcd(n, d) !== 1);
                 const multiplier = getRandomInt(2, 5);
-                const qn = n * multiplier;
-                const qd = d * multiplier;
-                
+                const qn = n * multiplier; const qd = d * multiplier;
                 currentAnswer = { num: n, den: d };
                 currentProblemStr = `${qn}/${qd}`;
-                
                 renderFraction(elQuestion, null, qn, qd);
                 renderInput(elAnswer, false);
-                
             } else if (currentMode === 'mix2imp') {
                 elInstruction.innerText = '➡️ かぶんすう に なおそう！';
-                const w = getRandomInt(1, 5);
-                const d = getRandomInt(2, 9);
-                const n = getRandomInt(1, d - 1);
-                
+                const w = getRandomInt(1, 5); const d = getRandomInt(2, 9); const n = getRandomInt(1, d - 1);
                 currentAnswer = { num: w * d + n, den: d };
                 currentProblemStr = `${w}と${n}/${d}`;
-                
                 renderFraction(elQuestion, w, n, d);
                 renderInput(elAnswer, false);
-                
             } else if (currentMode === 'imp2mix') {
                 elInstruction.innerText = '⬅️ たいぶんすう に なおそう！';
-                const w = getRandomInt(1, 5);
-                const d = getRandomInt(2, 9);
-                const n = getRandomInt(1, d - 1);
+                const w = getRandomInt(1, 5); const d = getRandomInt(2, 9); const n = getRandomInt(1, d - 1);
                 const qn = w * d + n;
-                
                 currentAnswer = { whole: w, num: n, den: d };
                 currentProblemStr = `${qn}/${d}`;
-                
                 renderFraction(elQuestion, null, qn, d);
                 renderInput(elAnswer, true);
             }
         }
 
-        // 問題の分数を画面に描画する関数
         function renderFraction(container, whole, num, den) {
             let html = '<div class="flex items-center justify-center text-blue-900">';
-            if (whole !== null) {
-                html += `<div class="text-7xl md:text-8xl font-black mr-3 mb-2">${whole}</div>`;
-            }
+            if (whole !== null) html += `<div class="text-7xl md:text-8xl font-black mr-3 mb-2">${whole}</div>`;
             html += `
                 <div class="flex flex-col items-center justify-center">
                     <div class="text-6xl md:text-7xl font-bold leading-none mb-2">${num}</div>
                     <div class="w-full min-w-[3.5rem] md:min-w-[4.5rem] h-1.5 md:h-2 bg-blue-900 rounded-full"></div>
                     <div class="text-6xl md:text-7xl font-bold leading-none mt-2">${den}</div>
-                </div>
-            `;
-            html += '</div>';
+                </div></div>`;
             container.innerHTML = html;
         }
 
-        // 入力欄を画面に描画する関数
         function renderInput(container, hasWhole) {
             let html = '<div class="flex items-center justify-center">';
-            if (hasWhole) {
-                html += `<input type="number" id="ans-whole" placeholder="?" class="w-20 h-24 md:w-28 md:h-32 text-5xl md:text-7xl text-center border-4 border-pink-300 rounded-2xl focus:outline-none focus:border-pink-500 mr-4 font-bold text-gray-800 shadow-inner bg-white placeholder-gray-300 transition" />`;
-            }
+            if (hasWhole) html += `<input type="number" id="ans-whole" placeholder="?" class="w-20 h-24 md:w-28 md:h-32 text-5xl md:text-7xl text-center border-4 border-pink-300 rounded-2xl focus:outline-none focus:border-pink-500 mr-4 font-bold text-gray-800 shadow-inner bg-white placeholder-gray-300 transition" />`;
             html += `
                 <div class="flex flex-col items-center justify-center">
                     <input type="number" id="ans-num" placeholder="?" class="w-20 h-20 md:w-28 md:h-24 text-5xl md:text-6xl text-center border-4 border-green-300 rounded-2xl focus:outline-none focus:border-green-500 mb-2 font-bold text-gray-800 shadow-inner bg-white placeholder-gray-300 transition" />
                     <div class="w-full min-w-[6rem] md:min-w-[8rem] h-1.5 md:h-2 bg-gray-600 rounded-full my-1"></div>
                     <input type="number" id="ans-den" placeholder="?" class="w-20 h-20 md:w-28 md:h-24 text-5xl md:text-6xl text-center border-4 border-green-300 rounded-2xl focus:outline-none focus:border-green-500 mt-2 font-bold text-gray-800 shadow-inner bg-white placeholder-gray-300 transition" />
-                </div>
-            `;
-            html += '</div>';
+                </div></div>`;
             container.innerHTML = html;
-            
             setTimeout(() => {
-                if(hasWhole && document.getElementById('ans-whole')) {
-                    document.getElementById('ans-whole').focus();
-                } else if (document.getElementById('ans-num')) {
-                    document.getElementById('ans-num').focus();
-                }
+                if(hasWhole && document.getElementById('ans-whole')) document.getElementById('ans-whole').focus();
+                else if (document.getElementById('ans-num')) document.getElementById('ans-num').focus();
             }, 100);
         }
 
-        // こたえあわせの判定処理
         function checkAnswer() {
             const elNum = document.getElementById('ans-num');
             const elDen = document.getElementById('ans-den');
-            
             if (!elNum || !elDen) return;
 
-            const inputNum = elNum.value;
-            const inputDen = elDen.value;
-            
-            if (inputNum === '' || inputDen === '') {
-                showFeedback(false, '⚠️ くうらん があるよ！');
-                return;
-            }
+            const inputNum = elNum.value; const inputDen = elDen.value;
+            if (inputNum === '' || inputDen === '') { showFeedback(false, '⚠️ くうらん があるよ！'); return; }
 
-            const n = parseInt(inputNum, 10);
-            const d = parseInt(inputDen, 10);
+            const n = parseInt(inputNum, 10); const d = parseInt(inputDen, 10);
             let isCorrect = false;
 
             if (currentMode === 'simplify' || currentMode === 'mix2imp') {
-                if (n === currentAnswer.num && d === currentAnswer.den) {
-                    isCorrect = true;
-                }
+                if (n === currentAnswer.num && d === currentAnswer.den) isCorrect = true;
             } else if (currentMode === 'imp2mix') {
                 const elWhole = document.getElementById('ans-whole');
-                const inputWhole = elWhole.value;
-                
-                if (inputWhole === '') {
-                    showFeedback(false, '⚠️ くうらん があるよ！');
-                    return;
-                }
-                const w = parseInt(inputWhole, 10);
-                if (w === currentAnswer.whole && n === currentAnswer.num && d === currentAnswer.den) {
-                    isCorrect = true;
-                }
+                if (elWhole.value === '') { showFeedback(false, '⚠️ くうらん があるよ！'); return; }
+                const w = parseInt(elWhole.value, 10);
+                if (w === currentAnswer.whole && n === currentAnswer.num && d === currentAnswer.den) isCorrect = true;
             }
 
-            // --- 成績と履歴の記録と保存 ---
             if (!hasCountedCurrentProblem) {
-                stats.total.attempts++;
-                stats[currentMode].attempts++;
-                
-                if (isCorrect) {
-                    stats.total.corrects++;
-                    stats[currentMode].corrects++;
-                }
+                stats.total.attempts++; stats[currentMode].attempts++;
+                if (isCorrect) { stats.total.corrects++; stats[currentMode].corrects++; }
 
-                let userAnswerStr = '';
-                if (currentMode === 'imp2mix') {
-                    const w = document.getElementById('ans-whole').value;
-                    userAnswerStr = `${w}と${n}/${d}`;
-                } else {
-                    userAnswerStr = `${n}/${d}`;
-                }
-
+                let userAnswerStr = currentMode === 'imp2mix' ? `${document.getElementById('ans-whole').value}と${n}/${d}` : `${n}/${d}`;
                 const modeNames = { 'simplify': 'やくぶん', 'mix2imp': 'かぶんすうへ', 'imp2mix': 'たいぶんすうへ' };
                 
-                // 履歴の一番上に追加
-                historyLog.unshift({
-                    mode: modeNames[currentMode],
-                    problem: currentProblemStr,
-                    answer: userAnswerStr,
-                    isCorrect: isCorrect
-                });
-
-                // データが大きくなりすぎないように、直近100件に制限する
-                if (historyLog.length > 100) {
-                    historyLog = historyLog.slice(0, 100);
-                }
+                historyLog.unshift({ mode: modeNames[currentMode], problem: currentProblemStr, answer: userAnswerStr, isCorrect: isCorrect });
+                if (historyLog.length > 100) historyLog = historyLog.slice(0, 100);
 
                 hasCountedCurrentProblem = true;
-                updateStatsUI(); // 画面更新
-                saveProgress();  // クラウドに保存
+                updateStatsUI();
+                saveProgress();
             }
 
-            // 結果の表示
-            if (isCorrect) {
-                showFeedback(true, '⭕️ 大せいかい！');
-            } else {
-                showFeedback(false, '❌ おしい！もういちど！');
-            }
+            if (isCorrect) showFeedback(true, '⭕️ 大せいかい！');
+            else showFeedback(false, '❌ おしい！もういちど！');
         }
 
         function showFeedback(isCorrect, text) {
-            if (isCorrect) {
-                elFeedback.innerHTML = `<div class="text-4xl md:text-5xl text-red-500 font-black animate-pop-in drop-shadow-md tracking-wider">${text}</div>`;
-            } else {
-                elFeedback.innerHTML = `<div class="text-3xl md:text-4xl text-blue-600 font-black animate-shake drop-shadow-md tracking-wider">${text}</div>`;
-            }
+            if (isCorrect) elFeedback.innerHTML = `<div class="text-4xl md:text-5xl text-red-500 font-black animate-pop-in drop-shadow-md tracking-wider">${text}</div>`;
+            else elFeedback.innerHTML = `<div class="text-3xl md:text-4xl text-blue-600 font-black animate-shake drop-shadow-md tracking-wider">${text}</div>`;
         }
 
-        // 成績表示と履歴リストを画面に反映させる関数
         function updateStatsUI() {
             const container = document.getElementById('stats-container');
             const calcRate = (c, a) => a === 0 ? 0 : Math.round((c / a) * 100);
@@ -471,11 +384,7 @@
 
             const ul = document.getElementById('history-ul');
             ul.innerHTML = '';
-            
-            if (historyLog.length === 0) {
-                ul.innerHTML = '<li class="text-center text-gray-400 py-2">まだ きろく がありません</li>';
-                return;
-            }
+            if (historyLog.length === 0) { ul.innerHTML = '<li class="text-center text-gray-400 py-2">まだ きろく がありません</li>'; return; }
 
             historyLog.forEach(log => {
                 const li = document.createElement('li');
@@ -495,19 +404,13 @@
             });
         }
 
-        // イベントリスナーの登録：履歴表示のトグル
         const btnToggleHistory = document.getElementById('btn-toggle-history');
         const historyList = document.getElementById('history-list');
         btnToggleHistory.addEventListener('click', () => {
             historyList.classList.toggle('hidden');
-            if (historyList.classList.contains('hidden')) {
-                btnToggleHistory.innerText = '📝 これまでのきろく をみる';
-            } else {
-                btnToggleHistory.innerText = '📝 きろく をかくす';
-            }
+            btnToggleHistory.innerText = historyList.classList.contains('hidden') ? '📝 これまでのきろく をみる' : '📝 きろく をかくす';
         });
 
-        // イベントリスナーの登録：モード切替ボタン
         Object.keys(btns).forEach(mode => {
             btns[mode].addEventListener('click', () => {
                 Object.values(btns).forEach(btn => {
@@ -516,28 +419,20 @@
                 });
                 btns[mode].classList.remove('opacity-60');
                 btns[mode].classList.add('opacity-100', 'ring-4', 'ring-offset-2', 'ring-orange-400', 'scale-105');
-                
                 currentMode = mode;
                 generateProblem();
             });
         });
 
-        // イベントリスナーの登録：アクションボタン
         btnCheck.addEventListener('click', checkAnswer);
         btnNext.addEventListener('click', generateProblem);
+        document.addEventListener('keypress', (e) => { if (e.key === 'Enter') checkAnswer(); });
 
-        // Enterキーを押した時にも答え合わせをする
-        document.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                checkAnswer();
-            }
-        });
-
-        // アプリ起動時の初期化処理
+        // 初期化処理の実行
+        initCloud();
         updateStatsUI();
         btns['simplify'].click();
 
     </script>
 </body>
 </html>
-
